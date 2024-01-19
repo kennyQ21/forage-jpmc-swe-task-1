@@ -21,6 +21,7 @@
 import json
 import random
 import urllib.request
+import time
 
 # Server API URLs
 QUERY = "http://localhost:8080/query?id={}"
@@ -31,29 +32,48 @@ N = 500
 
 def getDataPoint(quote):
     """ Produce all the needed values to generate a datapoint """
-    """ ------------- Update this function ------------- """
     stock = quote['stock']
     bid_price = float(quote['top_bid']['price'])
     ask_price = float(quote['top_ask']['price'])
-    price = bid_price
+    
+    # Calculate the average price
+    price = (bid_price + ask_price) / 2.0
+    
     return stock, bid_price, ask_price, price
 
 
 def getRatio(price_a, price_b):
     """ Get ratio of price_a and price_b """
-    """ ------------- Update this function ------------- """
-    return 1
+    if price_b == 0:
+        # Avoid division by zero
+        return float('inf')
+    return price_a / price_b
 
 
 # Main
 if __name__ == "__main__":
     # Query the price once every N seconds.
-    for _ in iter(range(N)):
+    for _ in range(N):
         quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
 
-        """ ----------- Update to get the ratio --------------- """
+        # Initialize prices for ratio calculation
+        price_a = None
+        price_b = None
+
         for quote in quotes:
             stock, bid_price, ask_price, price = getDataPoint(quote)
             print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (stock, bid_price, ask_price, price))
 
-        print("Ratio %s" % getRatio(price, price))
+            # Set prices for ratio calculation
+            if price_a is None:
+                price_a = price
+            else:
+                price_b = price
+
+        if price_a is not None and price_b is not None:
+            ratio = getRatio(price_a, price_b)
+            print("Ratio %s" % ratio)
+
+        # Sleep for a moment before the next query
+        time.sleep(1)
+
